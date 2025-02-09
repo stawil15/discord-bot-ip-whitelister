@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/geekloper/discord-bot-ip-whitelister/bot"
 	"github.com/geekloper/discord-bot-ip-whitelister/firewall"
 )
 
@@ -15,7 +16,7 @@ const (
 )
 
 func init() {
-	RegisterCommand(&discordgo.ApplicationCommand{
+	bot.RegisterCommand(&discordgo.ApplicationCommand{
 		Name:        cmdName,
 		Description: cmdDescription,
 		Options: []*discordgo.ApplicationCommandOption{
@@ -28,7 +29,7 @@ func init() {
 		},
 	})
 
-	RegisterHandler(cmdName, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	bot.RegisterHandler(cmdName, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		options := i.ApplicationCommandData().Options
 
 		optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
