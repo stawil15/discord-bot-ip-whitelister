@@ -2,6 +2,7 @@ package firewall
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"strings"
 
@@ -10,14 +11,22 @@ import (
 	"github.com/geekloper/discord-bot-ip-whitelister/utils"
 )
 
-var defaultPorts []string
+var (
+	defaultPorts     []string
+	defaultProtocols []string
+)
 
-func InitFirewall(servicePorts string) {
+func InitFirewall(servicePorts, serviceProtocols string) {
 	// Check UFW Status
 	IsUFWInstalled()
 	IsUFWActive()
 
 	defaultPorts = strings.Split(servicePorts, ",")
+	defaultProtocols = strings.Split(serviceProtocols, ",")
+
+	if len(defaultPorts) != len(defaultProtocols) {
+		log.Fatal("Mismatch between number of SERVICE_PORTS and SERVICE_PROTOCOLS")
+	}
 }
 
 // Allow IP in UFW and update database
@@ -25,8 +34,16 @@ func AllowUFWRule(ip, discordUser string) error {
 	if !utils.ValidateIP(ip) {
 		return errors.ErrInvalidIpFormat
 	}
-	for _, port := range defaultPorts {
-		cmd := fmt.Sprintf("sudo ufw allow from %s to any port %s", ip, port)
+
+	if ok, dbIp := database.UserIpExists(discordUser); ok {
+		DeleteUFWRule(dbIp)
+	}
+
+	for i := 0; i < len(defaultPorts); i++ {
+		port := defaultPorts[i]
+		proto := defaultProtocols[i]
+
+		cmd := fmt.Sprintf("sudo ufw allow proto %s from %s to any port %s", proto, ip, port)
 		output, err := utils.RunCommand(cmd)
 		if err != nil {
 			return fmt.Errorf("failed to allow rule for port %s: %v\n%s", port, err, output)
@@ -46,6 +63,11 @@ func DenyUFWRule(ip, discordUser string) error {
 	if !utils.ValidateIP(ip) {
 		return errors.ErrInvalidIpFormat
 	}
+
+	if ok, dbIp := database.UserIpExists(discordUser); ok {
+		DeleteUFWRule(dbIp)
+	}
+
 	for _, port := range defaultPorts {
 		cmd := fmt.Sprintf("sudo ufw deny from %s to any port %s", ip, port)
 		output, err := utils.RunCommand(cmd)
@@ -66,11 +88,14 @@ func DeleteUFWRule(ip string) error {
 	if !utils.ValidateIP(ip) {
 		return errors.ErrInvalidIpFormat
 	}
-	for _, port := range defaultPorts {
-		cmd := fmt.Sprintf("sudo ufw delete allow from %s to any port %s", ip, port)
+	for i := 0; i < len(defaultPorts); i++ {
+		port := defaultPorts[i]
+		proto := defaultProtocols[i]
+
+		cmd := fmt.Sprintf("sudo ufw delete allow proto %s from %s to any port %s", proto, ip, port)
 		output, err := utils.RunCommand(cmd)
 		if err != nil {
-			return fmt.Errorf("failed to delete rule for port %s: %v\n%s", port, err, output)
+			return fmt.Errorf("failed to delete rule for port %s (%s): %v\n%s", port, proto, err, output)
 		}
 	}
 	err := database.RemoveRule(ip)

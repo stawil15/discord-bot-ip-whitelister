@@ -40,8 +40,20 @@ func RemoveRule(ip string) error {
 	return err
 }
 
+func UserIpExists(discordUser string) (bool, string) {
+	var ip string
+	err := db.QueryRow("SELECT ip FROM rules WHERE discord_user = ?", discordUser).Scan(&ip)
+	if err == sql.ErrNoRows {
+		return false, ""
+	} else if err != nil {
+		log.Fatalf("Failed to check if user exists: %v", err)
+	}
+	return true, ip
+}
+
 func DumpAllRules() {
-	slog.Info("Dump all rules : ")
+	slog.Info("Dump all DB rules")
+	slog.Info("=================")
 
 	rows, err := db.Query("SELECT id, ip, discord_user, status FROM rules")
 	if err != nil {
@@ -63,4 +75,6 @@ func DumpAllRules() {
 	if err := rows.Err(); err != nil {
 		log.Fatalf("Error iterating rows: %v", err)
 	}
+
+	slog.Info("=================")
 }
