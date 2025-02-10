@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-	"log/slog"
 	"os"
 	"os/signal"
 
@@ -11,11 +9,14 @@ import (
 	"github.com/geekloper/discord-bot-ip-whitelister/config"
 	"github.com/geekloper/discord-bot-ip-whitelister/database"
 	"github.com/geekloper/discord-bot-ip-whitelister/firewall"
+	"github.com/geekloper/discord-bot-ip-whitelister/logger"
 )
 
 func main() {
 	// Load environment variables
 	config.LoadEnv()
+
+	logger.InitLogger()
 
 	// Required environment variables
 	botGuildID := config.GetEnv("BOT_GUILD_ID", true)
@@ -29,11 +30,13 @@ func main() {
 	bot.InitBot()
 
 	// Log all rules in debug level mode
-	database.DumpAllRules()
+	if config.DebugMode() {
+		database.DumpAllRules()
+	}
 
 	err := bot.OpenSession()
 	if err != nil {
-		log.Fatalf("Cannot open discord session: %v", err)
+		logger.Fatal("Cannot open discord session: %v", err)
 	}
 
 	if deleteCommands {
@@ -49,7 +52,7 @@ func main() {
 func waitForShutdown() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-	slog.Info("Press Ctrl+C to exit")
+	logger.Info("Press Ctrl+C to exit")
 	<-stop
-	slog.Info("Gracefully shutting down.")
+	logger.Info("Gracefully shutting down.")
 }

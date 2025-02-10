@@ -1,11 +1,9 @@
 package bot
 
 import (
-	"log"
-	"log/slog"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/geekloper/discord-bot-ip-whitelister/config"
+	"github.com/geekloper/discord-bot-ip-whitelister/logger"
 )
 
 var s *discordgo.Session
@@ -16,7 +14,7 @@ func InitBot() {
 
 	s, err = discordgo.New("Bot " + botToken)
 	if err != nil {
-		log.Fatal("Invalid bot parameters: ", err)
+		logger.Fatal("Invalid bot parameters: ", err)
 	}
 
 	s.AddHandler(HandleInteractions)
@@ -32,26 +30,26 @@ func CloseSession() {
 }
 
 func RemoveCommands(botGuildID string) {
-	slog.Info("Removing commands...")
+	logger.Info("Removing commands...")
 	registeredCommands, err := s.ApplicationCommands(s.State.User.ID, botGuildID)
 	if err != nil {
-		log.Fatal("Could not fetch registered commands: ", err)
+		logger.Fatal("Could not fetch registered commands: ", err)
 	}
 
 	for _, v := range registeredCommands {
 		err := s.ApplicationCommandDelete(s.State.User.ID, botGuildID, v.ID)
 		if err != nil {
-			log.Fatalf("Cannot delete '%v' command: %v", v.Name, err)
+			logger.Fatal("Cannot delete '%v' command: %v", v.Name, err)
 		}
 	}
 }
 
 func RegisterCommands(botGuildID string) {
-	slog.Info("Adding commands...")
+	logger.Info("Adding commands...")
 	for _, v := range Commands {
 		_, err := s.ApplicationCommandCreate(s.State.User.ID, botGuildID, v)
 		if err != nil {
-			log.Fatalf("Cannot create '%v' command: %v", v.Name, err)
+			logger.Fatal("Cannot create '%v' command: %v", v.Name, err)
 		}
 	}
 }
@@ -63,5 +61,5 @@ func HandleInteractions(session *discordgo.Session, i *discordgo.InteractionCrea
 }
 
 func HandleReady(session *discordgo.Session, r *discordgo.Ready) {
-	slog.Info("Logged in as", "username", session.State.User.Username, "discriminator", session.State.User.Discriminator)
+	logger.Info("Logged in as", "username", session.State.User.Username, "discriminator", session.State.User.Discriminator)
 }

@@ -2,9 +2,8 @@ package database
 
 import (
 	"database/sql"
-	"log"
-	"log/slog"
 
+	"github.com/geekloper/discord-bot-ip-whitelister/logger"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -14,7 +13,7 @@ func InitDB() {
 	var err error
 	db, err = sql.Open("sqlite3", "rules.db")
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		logger.Fatal("Failed to open database: %v", err)
 	}
 
 	createTableQuery := `CREATE TABLE IF NOT EXISTS rules (
@@ -26,7 +25,7 @@ func InitDB() {
 
 	_, err = db.Exec(createTableQuery)
 	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
+		logger.Fatal("Failed to create table: %v", err)
 	}
 }
 
@@ -40,24 +39,25 @@ func RemoveRule(ip string) error {
 	return err
 }
 
-func UserIpExists(discordUser string) (bool, string) {
+func UserExists(discordUser string) (bool, string, string) {
 	var ip string
-	err := db.QueryRow("SELECT ip FROM rules WHERE discord_user = ?", discordUser).Scan(&ip)
+	var status string
+	err := db.QueryRow("SELECT ip, status FROM rules WHERE discord_user = ?", discordUser).Scan(&ip, &status)
 	if err == sql.ErrNoRows {
-		return false, ""
+		return false, "", ""
 	} else if err != nil {
-		log.Fatalf("Failed to check if user exists: %v", err)
+		logger.Fatal("Failed to check if user exists: %v", err)
 	}
-	return true, ip
+	return true, ip, status
 }
 
 func DumpAllRules() {
-	slog.Info("Dump all DB rules")
-	slog.Info("=================")
+	logger.Debug("Dump all DB rules")
+	logger.Debug("=================")
 
 	rows, err := db.Query("SELECT id, ip, discord_user, status FROM rules")
 	if err != nil {
-		log.Fatalf("Failed to query rules: %v", err)
+		logger.Fatal("Failed to query rules: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -67,14 +67,14 @@ func DumpAllRules() {
 		var id int
 		var ip, discordUser, status string
 		if err := rows.Scan(&id, &ip, &discordUser, &status); err != nil {
-			log.Fatalf("Failed to scan row: %v", err)
+			logger.Fatal("Failed to scan row: %v", err)
 		}
-		slog.Info("RULE ", "ID", i, "Ip", ip, "User", discordUser, "Status", status)
+		logger.Debug("RULE ", "ID", i, "Ip", ip, "User", discordUser, "Status", status)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Fatalf("Error iterating rows: %v", err)
+		logger.Fatal("Error iterating rows: %v", err)
 	}
 
-	slog.Info("=================")
+	logger.Debug("=================")
 }

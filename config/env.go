@@ -23,3 +23,8 @@ func GetEnv(key string, required bool) string {
 	}
 	return value
 }
+
+func DebugMode() bool {
+	value := os.Getenv("DEBUG")
+	return value == "1" || value == "true"
+}

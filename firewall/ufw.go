@@ -2,12 +2,10 @@ package firewall
 
 import (
 	"fmt"
-	"log"
-	"log/slog"
 	"strings"
 
-	"github.com/geekloper/discord-bot-ip-whitelister/database"
-	"github.com/geekloper/discord-bot-ip-whitelister/errors"
+	"github.com/geekloper/discord-bot-ip-whitelister/config"
+	"github.com/geekloper/discord-bot-ip-whitelister/logger"
 	"github.com/geekloper/discord-bot-ip-whitelister/utils"
 )
 
@@ -18,76 +16,73 @@ var (
 
 func InitFirewall(servicePorts, serviceProtocols string) {
 	// Check UFW Status
-	IsUFWInstalled()
-	IsUFWActive()
+	isUFWInstalled()
+	isUFWActive()
+
+	if config.DebugMode() {
+		dumpAllUFWRules()
+	}
 
 	defaultPorts = strings.Split(servicePorts, ",")
 	defaultProtocols = strings.Split(serviceProtocols, ",")
 
 	if len(defaultPorts) != len(defaultProtocols) {
-		log.Fatal("Mismatch between number of SERVICE_PORTS and SERVICE_PROTOCOLS")
+		logger.Fatal("Mismatch between number of SERVICE_PORTS and SERVICE_PROTOCOLS")
 	}
+
+	logger.Info("Firewall initialized successfully.", "DefaultsPorts", defaultPorts, "DefaultsProtocols", defaultProtocols)
 }
 
-// Allow IP in UFW and update database
-func AllowUFWRule(ip, discordUser string) error {
-	if !utils.ValidateIP(ip) {
-		return errors.ErrInvalidIpFormat
+// AllowUFWRule applies a UFW allow rule for a given IP.
+func AllowUFWRule(ip string) error {
+	if err := applyUFWRule(ip, "allow"); err != nil {
+		logger.Error("Failed to allow UFW rule", "ip", ip, "error", err)
+		return err
 	}
 
-	if ok, dbIp := database.UserIpExists(discordUser); ok {
-		DeleteUFWRule(dbIp)
+	logger.Info("Successfully added UFW allow rule", "ip", ip)
+	return nil
+}
+
+// DenyUFWRule applies a UFW deny rule for a given IP.
+func DenyUFWRule(ip string) error {
+	if err := applyUFWRule(ip, "deny"); err != nil {
+		logger.Error("Failed to deny UFW rule", "ip", ip, "error", err)
+		return err
 	}
 
+	logger.Info("Successfully added UFW deny rule", "ip", ip)
+	return nil
+}
+
+// DeleteUFWRule removes an IP from UFW.
+func DeleteUFWRule(ip string) error {
+	if err := removeUFWRule(ip); err != nil {
+		logger.Error("Failed to delete UFW rule", "ip", ip, "error", err)
+		return err
+	}
+
+	logger.Info("Successfully removed UFW rule", "ip", ip)
+	return nil
+}
+
+// Helper function to apply UFW allow or deny rules
+func applyUFWRule(ip, action string) error {
 	for i := 0; i < len(defaultPorts); i++ {
 		port := defaultPorts[i]
 		proto := defaultProtocols[i]
 
-		cmd := fmt.Sprintf("sudo ufw allow proto %s from %s to any port %s", proto, ip, port)
+		cmd := fmt.Sprintf("sudo ufw %s proto %s from %s to any port %s", action, proto, ip, port)
 		output, err := utils.RunCommand(cmd)
 		if err != nil {
-			return fmt.Errorf("failed to allow rule for port %s: %v\n%s", port, err, output)
+			return fmt.Errorf("failed to %s rule for port %s: %v\n%s", action, port, err, output)
 		}
 	}
-	err := database.AddRule(ip, discordUser, "allow")
-	if err != nil {
-		return fmt.Errorf("failed to store rule in database: %v", err)
-	}
-
-	slog.Info("IP rule added successfully", "ip", ip)
 	return nil
 }
 
-// Deny IP in UFW and update database
-func DenyUFWRule(ip, discordUser string) error {
-	if !utils.ValidateIP(ip) {
-		return errors.ErrInvalidIpFormat
-	}
-
-	if ok, dbIp := database.UserIpExists(discordUser); ok {
-		DeleteUFWRule(dbIp)
-	}
-
-	for _, port := range defaultPorts {
-		cmd := fmt.Sprintf("sudo ufw deny from %s to any port %s", ip, port)
-		output, err := utils.RunCommand(cmd)
-		if err != nil {
-			return fmt.Errorf("failed to deny rule for port %s: %v\n%s", port, err, output)
-		}
-	}
-	err := database.AddRule(ip, discordUser, "deny")
-	if err != nil {
-		return fmt.Errorf("failed to store rule in database: %v", err)
-	}
-	slog.Info("IP rule denied successfully", "ip", ip)
-	return nil
-}
-
-// Delete UFW rule and update database
-func DeleteUFWRule(ip string) error {
-	if !utils.ValidateIP(ip) {
-		return errors.ErrInvalidIpFormat
-	}
+// Helper function to remove UFW rules
+func removeUFWRule(ip string) error {
 	for i := 0; i < len(defaultPorts); i++ {
 		port := defaultPorts[i]
 		proto := defaultProtocols[i]
@@ -98,10 +93,5 @@ func DeleteUFWRule(ip string) error {
 			return fmt.Errorf("failed to delete rule for port %s (%s): %v\n%s", port, proto, err, output)
 		}
 	}
-	err := database.RemoveRule(ip)
-	if err != nil {
-		return fmt.Errorf("failed to remove rule from database: %v", err)
-	}
-	slog.Info("IP rule deleted successfully", "ip", ip)
 	return nil
 }

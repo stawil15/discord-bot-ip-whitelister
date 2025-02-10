@@ -1,33 +1,43 @@
 package firewall
 
 import (
-	"log"
-	"log/slog"
 	"strings"
 
+	"github.com/geekloper/discord-bot-ip-whitelister/logger"
 	"github.com/geekloper/discord-bot-ip-whitelister/utils"
 )
 
 // Check if UFW is installed
-func IsUFWInstalled() {
+func isUFWInstalled() {
 	_, err := utils.RunCommand("which ufw")
 	if err != nil {
-		log.Fatal("❌ UFW is NOT installed. Install it using: sudo apt install ufw")
+		logger.Fatal("❌ UFW is NOT installed. Install it using: sudo apt install ufw")
 	}
 
-	slog.Info("✅ UFW is installed.")
+	logger.Info("✅ UFW is installed.")
 }
 
 // Check if UFW is active
-func IsUFWActive() {
+func isUFWActive() {
 	output, err := utils.RunCommand("sudo ufw status")
 	if err != nil {
-		log.Fatalf("❌ Can't check UFW Status, error: %v", err)
+		logger.Fatal("❌ Can't check UFW Status, error: %v", err)
 	}
 
 	if strings.Contains(string(output), "Status: active") {
-		slog.Info("✅ UFW is ACTIVE.")
+		logger.Info("✅ UFW is ACTIVE.")
 	} else {
-		log.Fatal("❌ UFW is NOT active. Enable it using: sudo ufw enable")
+		logger.Fatal("❌ UFW is NOT active. Enable it using: sudo ufw enable")
 	}
+}
+
+func dumpAllUFWRules() {
+	logger.Debug("Dump all UFW rules")
+	logger.Debug("=================")
+	output, err := utils.RunCommand("sudo ufw status verbose")
+	if err != nil {
+		logger.Fatal("❌ Can't check UFW Status, error: %v", err)
+	}
+	logger.Debug(output)
+	logger.Debug("=================")
 }
