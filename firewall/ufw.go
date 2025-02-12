@@ -9,12 +9,9 @@ import (
 	"github.com/geekloper/discord-bot-ip-whitelister/utils"
 )
 
-var (
-	defaultPorts     []string
-	defaultProtocols []string
-)
+var defaultServices []string
 
-func InitFirewall(servicePorts, serviceProtocols string) {
+func InitFirewall(services string) {
 	// Check UFW Status
 	isUFWInstalled()
 	isUFWActive()
@@ -23,14 +20,16 @@ func InitFirewall(servicePorts, serviceProtocols string) {
 		dumpAllUFWRules()
 	}
 
-	defaultPorts = strings.Split(servicePorts, ",")
-	defaultProtocols = strings.Split(serviceProtocols, ",")
+	defaultServices = strings.Split(services, ",")
 
-	if len(defaultPorts) != len(defaultProtocols) {
-		logger.Fatal("Mismatch between number of SERVICE_PORTS and SERVICE_PROTOCOLS")
+	// Vérifier que chaque entrée est bien formée (port/protocol)
+	for _, service := range defaultServices {
+		if !strings.Contains(service, "/") {
+			logger.Fatal("Invalid format for service, please use format port/protocol", "SERVICE", service)
+		}
 	}
 
-	logger.Info("Firewall initialized successfully.", "DefaultsPorts", defaultPorts, "DefaultsProtocols", defaultProtocols)
+	logger.Info("✅ Firewall initialized successfully.", "SERVICES", defaultServices)
 }
 
 // AllowUFWRule applies a UFW allow rule for a given IP.
@@ -68,30 +67,38 @@ func DeleteUFWRule(ip string) error {
 
 // Helper function to apply UFW allow or deny rules
 func applyUFWRule(ip, action string) error {
-	for i := 0; i < len(defaultPorts); i++ {
-		port := defaultPorts[i]
-		proto := defaultProtocols[i]
+	for _, service := range defaultServices {
+		parts := strings.Split(service, "/")
+		if len(parts) != 2 {
+			return fmt.Errorf("Invalid format for service: %s", service)
+		}
+		port, proto := parts[0], parts[1]
 
 		cmd := fmt.Sprintf("sudo ufw %s proto %s from %s to any port %s", action, proto, ip, port)
 		output, err := utils.RunCommand(cmd)
 		if err != nil {
-			return fmt.Errorf("failed to %s rule for port %s: %v\n%s", action, port, err, output)
+			return fmt.Errorf("❌ failed to %s rule for port %s: %v\n%s", action, port, err, output)
 		}
 	}
+
 	return nil
 }
 
 // Helper function to remove UFW rules
 func removeUFWRule(ip string) error {
-	for i := 0; i < len(defaultPorts); i++ {
-		port := defaultPorts[i]
-		proto := defaultProtocols[i]
+	for _, service := range defaultServices {
+		parts := strings.Split(service, "/")
+		if len(parts) != 2 {
+			return fmt.Errorf("Invalid format for service: %s", service)
+		}
+		port, proto := parts[0], parts[1]
 
-		cmd := fmt.Sprintf("sudo ufw delete allow proto %s from %s to any port %s", proto, ip, port)
+		cmd := fmt.Sprintf("sudo ufw delete proto %s from %s to any port %s", proto, ip, port)
 		output, err := utils.RunCommand(cmd)
 		if err != nil {
-			return fmt.Errorf("failed to delete rule for port %s (%s): %v\n%s", port, proto, err, output)
+			return fmt.Errorf("❌ failed to delete rule for port %s: %v\n%s", port, err, output)
 		}
 	}
+
 	return nil
 }

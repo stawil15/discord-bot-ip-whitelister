@@ -20,13 +20,12 @@ func main() {
 
 	// Required environment variables
 	botGuildID := config.GetEnv("BOT_GUILD_ID", true)
-	servicePorts := config.GetEnv("SERVICE_PORTS", true)
-	serviceProtocols := config.GetEnv("SERVICE_PROTOCOLS", true)
+	services := config.GetEnv("SERVICES", true)
 	deleteCommands := config.GetEnv("DELETE_COMMADS", false) == "true"
 
 	// Initialize modules
 	database.InitDB()
-	firewall.InitFirewall(servicePorts, serviceProtocols)
+	firewall.InitFirewall(services)
 	bot.InitBot()
 
 	// Log all rules in debug level mode
