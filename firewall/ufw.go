@@ -70,7 +70,7 @@ func applyUFWRule(ip, action string) error {
 	for _, service := range defaultServices {
 		parts := strings.Split(service, "/")
 		if len(parts) != 2 {
-			return fmt.Errorf("Invalid format for service: %s", service)
+			return fmt.Errorf("invalid format for service: %s", service)
 		}
 		port, proto := parts[0], parts[1]
 
@@ -89,7 +89,7 @@ func removeUFWRule(ip string) error {
 	for _, service := range defaultServices {
 		parts := strings.Split(service, "/")
 		if len(parts) != 2 {
-			return fmt.Errorf("Invalid format for service: %s", service)
+			return fmt.Errorf("invalid format for service: %s", service)
 		}
 		port, proto := parts[0], parts[1]
 
