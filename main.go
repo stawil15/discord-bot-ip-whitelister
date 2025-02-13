@@ -10,6 +10,7 @@ import (
 	"github.com/geekloper/discord-bot-ip-whitelister/database"
 	"github.com/geekloper/discord-bot-ip-whitelister/firewall"
 	"github.com/geekloper/discord-bot-ip-whitelister/logger"
+	"github.com/geekloper/discord-bot-ip-whitelister/services"
 )
 
 func main() {
@@ -20,13 +21,15 @@ func main() {
 
 	// Required environment variables
 	botGuildID := config.GetEnv("BOT_GUILD_ID", true)
-	services := config.GetEnv("SERVICES", true)
+	servicesPortsPros := config.GetEnv("SERVICES", true)
 	deleteCommands := config.GetEnv("DELETE_COMMADS", false) == "true"
+	adminIDs := config.GetEnv("ADMIN_IDS", false)
 
 	// Initialize modules
 	database.InitDB()
-	firewall.InitFirewall(services)
+	firewall.InitFirewall(servicesPortsPros)
 	bot.InitBot()
+	services.InitServices(adminIDs)
 
 	// Log all rules in debug level mode
 	if config.DebugMode() {

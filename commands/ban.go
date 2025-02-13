@@ -12,39 +12,39 @@ import (
 
 func init() {
 	bot.RegisterCommand(&discordgo.ApplicationCommand{
-		Name:        whitelistCmd.Name,
-		Description: whitelistCmd.Description,
+		Name:        banCmd.Name,
+		Description: banCmd.Description,
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        whitelistCmd.OptionName,
-				Description: whitelistCmd.OptionDesc,
+				Name:        banCmd.OptionName,
+				Description: banCmd.OptionDesc,
 				Required:    true,
 			},
 		},
 	})
 
-	bot.RegisterHandler(whitelistCmd.Name, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	bot.RegisterHandler(banCmd.Name, func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		options := i.ApplicationCommandData().Options
 
 		optionMap := utils.OptionsToMap(options)
 
-		var msgformat string
+		var msgContent string
 
-		if option, ok := optionMap[whitelistCmd.OptionName]; ok {
-			ip := option.StringValue()
+		if option, ok := optionMap[banCmd.OptionName]; ok {
+			userID := option.StringValue()
 
-			err := services.WhitelistIP(ip, i.Interaction.Member.User.ID)
+			err := services.BanUser(userID, i.Interaction.Member.User.ID)
 
 			// Handle errors and set response message
-			if errors.Is(err, apperror.ErrInvalidIpFormat) {
-				msgformat = "❌ Your IP is not valid, please provide a valid IP"
-			} else if errors.Is(err, apperror.ErrBannedUser) {
-				msgformat = "❌ Sorry you're banned, please contact a server admin"
+			if errors.Is(err, apperror.ErrUserDBNotFound) {
+				msgContent = "❌ User not found. Please ensure this user is whitelisted before proceeding."
+			} else if errors.Is(err, apperror.ErrUserNotAdmin) {
+				msgContent = "❌ Sorry you don't have permission to ban a user, please contact a server admin"
 			} else if err != nil {
-				msgformat = "An unexpected error occurred"
+				msgContent = "An unexpected error occurred"
 			} else {
-				msgformat = "Your IP has been added successfully 🥳"
+				msgContent = "User " + userID + " has been banned successfully 🥳"
 			}
 		}
 
@@ -52,7 +52,7 @@ func init() {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: msgformat,
+				Content: msgContent,
 			},
 		})
 	})
