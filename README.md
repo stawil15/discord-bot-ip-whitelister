@@ -1,197 +1,123 @@
-# 🚀 Discord Bot IP Whitelister - Linux Service Setup
 
-This guide explains how to **install, configure, and run** the Discord bot as a **systemd service** on a Linux server.
+# Discord Bot IP Whitelister
 
-
-## 📌 Prerequisites
-Before proceeding, ensure you have:
-- A **Linux server** (Ubuntu, Debian, CentOS, etc.)
-- **Go installed** (for building the binary)
-- **Systemd** (default in most modern Linux distributions)
-- **A valid `.env` file** with bot credentials
+A Discord bot that allows users to manage their IP whitelisting and bans directly from Discord. With the `/whitelist` command, players can securely add their IP addresses to the UFW firewall of a game server, preventing unauthorized access and mitigating DDoS attacks.
+Admins have access to the `/ban` command, which allows them to ban a user by their Discord ID, preventing them from whitelisting their IP. This bot is designed for servers using IP-based whitelisting, such as FiveM, Minecraft, Rust, and more.
 
 
+## Features
+- **Slash command `/whitelist (ip)`**: Players can whitelist their IPs securely.
+- **Slash command `/ban (user_id)`**: Admins can prevent specific users from adding their IP.
+- **Prevents unauthorized access**: Only approved users can connect.
+- **DDoS Mitigation**: Reduces attack surface by limiting access to verified players.
+- **Multi-Game Support**: Works with FiveM, Minecraft, Rust, and any server using UFW.
+- **SQLite Database**: Keeps a log of whitelisted users and their IPs for traceability.
+- **Systemd Service Support**: Runs as a background service for automatic startup and reliability.
+- **Secure & Configurable**: Uses environment variables for easy customization.
 
-## 🛠️ Step 1: Build the Go Application
 
-If you haven’t already compiled the bot, run:
+
+## Installation
+
+### 1. One-Line Install Command  
+Run this command to **automatically download and install** the bot:
 
 ```sh
-go build -o bot-app
+curl -sSL https://raw.githubusercontent.com/geekloper/discord-bot-ip-whitelister/main/install.sh  | sudo bash
 ```
 
-Move the binary to a suitable directory:
+This script will:
+- Checks if **UFW** and **SQLite3** are installed (prompts if missing).
+- Creates a dedicated system user (`whitelistbot`).
+- Downloads the latest bot binary from GitHub.
+- Installs the bot to `/usr/local/bin/`.
+- Sets up configuration files in `/etc/ip_whitelister_bot/`.
+- Creates a SQLite database in `/var/lib/ip_whitelister_bot/`.
+- Configures and enables a **systemd service** for auto-restart.
+
+---
+
+### 2. Configure the Bot
+Edit the `.env` file to add your Discord bot credentials:
 
 ```sh
-sudo mv bot-app /usr/local/bin/
+sudo vi /etc/whitelist_bot/.env
 ```
 
-Ensure the binary has execution permissions:
-
-```sh
-sudo chmod +x /usr/local/bin/bot-app
+Example `.env` file:
+```ini
+BOT_TOKEN=your-bot-token
+BOT_GUILD_ID=your-guild-id
+ADMIN_IDS=1234567890,0987654321
+DELETE_COMMANDS=true
+SERVICES=80/tcp,443/tcp
+DEBUG=false
+UFW_PATH=/usr/sbin/ufw
+DB_PATH=/var/lib/ip_whitelister_bot/whitelist.db
 ```
 
 ---
 
-## 📁 Step 2: Create an Environment Variables File
-
-To securely store environment variables, create a dedicated environment file:
-
-```sh
-sudo nano /etc/default/discord-bot
-```
-
-Add your required environment variables:
-
-```ini
-BOT_TOKEN=your_bot_token_here
-BOT_GUILD_ID=your_guild_id
-SERVICE_PORTS=80,443
-DELETE_COMMADS=true
-```
-
-Ensure the file is readable by the service user:
+### 3. Start the Bot
+Once configured, start and enable the bot:
 
 ```sh
-sudo chmod 600 /etc/default/discord-bot
+sudo systemctl restart ip_whitelister_bot
+sudo systemctl enable ip_whitelister_bot
 ```
 
----
-
-## ⚙️ Step 3: Create a Systemd Service File
-
-To manage the bot as a Linux service, create a `systemd` unit file:
+Check if the bot is running:
 
 ```sh
-sudo nano /etc/systemd/system/discord-bot.service
+sudo systemctl status ip_whitelister_bot
 ```
 
-Paste the following configuration:
-
-```ini
-[Unit]
-Description=Discord Bot IP Whitelister
-After=network.target
-
-[Service]
-Type=simple
-User=your_linux_user  # Change this to the appropriate user
-Group=your_linux_user
-WorkingDirectory=/usr/local/bin
-ExecStart=/usr/local/bin/bot-app
-Restart=always
-RestartSec=5
-EnvironmentFile=/etc/default/discord-bot  # Load environment variables
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Save and exit.
-
-Reload `systemd` to apply the changes:
+View logs:
 
 ```sh
+sudo journalctl -u ip_whitelister_bot -f
+```
+
+## Usage
+
+## 🛠️ Usage
+
+### ✅ Whitelisting an IP  
+Users can whitelist their IP via the Discord command:
+
+```
+/whitelist 192.168.1.1
+```
+
+This will automatically add the IP to UFW and store it in the database.
+
+### ❌ Banning a User  
+Admins can **ban a user by Discord ID** to prevent them from using `/whitelist`:
+
+```
+/ban 1234567890
+```
+
+Banning removes their ability to whitelist IPs & deny their ips in UFW.
+
+
+
+## Uninstallation
+To remove the bot completely:
+
+```sh
+sudo systemctl stop ip_whitelister_bot
+sudo systemctl disable ip_whitelister_bot
+sudo rm -rf /usr/local/bin/ip_whitelister_bot /etc/ip_whitelister_bot /var/lib/ip_whitelister_bot /etc/systemd/system/ip_whitelister_bot.service
 sudo systemctl daemon-reload
 ```
 
 ---
 
-## 🚀 Step 4: Start and Enable the Service
-
-Start the bot service:
-
-```sh
-sudo systemctl start discord-bot
-```
-
-Enable it to run on boot:
-
-```sh
-sudo systemctl enable discord-bot
-```
-
-Check if the service is running:
-
-```sh
-sudo systemctl status discord-bot
-```
-
-You should see output similar to:
-
-```sh
-● discord-bot.service - Discord Bot IP Whitelister
-   Loaded: loaded (/etc/systemd/system/discord-bot.service; enabled; vendor preset: enabled)
-   Active: active (running) since Sun 2025-02-08 14:00:00 UTC; 2s ago
-   Main PID: 12345 (bot-app)
-   CGroup: /system.slice/discord-bot.service
-```
+## Contributing
+Contributions are welcome! If you find a bug or want to improve the bot, feel free to submit an issue or pull request.
 
 ---
 
-## 📊 Step 5: Viewing Logs
-
-To monitor logs in real time:
-
-```sh
-sudo journalctl -u discord-bot -f
-```
-
-To view logs for the last hour:
-
-```sh
-sudo journalctl -u discord-bot --since "1 hour ago"
-```
-
----
-
-## 🔄 Managing the Service
-
-Restart the bot:
-
-```sh
-sudo systemctl restart discord-bot
-```
-
-Stop the bot:
-
-```sh
-sudo systemctl stop discord-bot
-```
-
-Disable it from starting on boot:
-
-```sh
-sudo systemctl disable discord-bot
-```
-
----
-
-## 🛠️ Troubleshooting
-
-### ❌ The service doesn’t start
-- Check logs using:  
-  ```sh
-  sudo journalctl -u discord-bot -xe
-  ```
-- Ensure the binary is executable:
-  ```sh
-  sudo chmod +x /usr/local/bin/bot-app
-  ```
-- Make sure the environment file exists and has correct permissions:
-  ```sh
-  ls -l /etc/default/discord-bot
-  ```
-
-### 🔄 Changes not applying after updating `.env`
-- Restart the service:
-  ```sh
-  sudo systemctl restart discord-bot
-  ```
-- If still not working, reload `systemd`:
-  ```sh
-  sudo systemctl daemon-reload
-  sudo systemctl restart discord-bot
-  ```
-
+## License
+This project is open-source under the MIT License.
