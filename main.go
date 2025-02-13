@@ -23,10 +23,11 @@ func main() {
 	botGuildID := config.GetEnv("BOT_GUILD_ID", true)
 	servicesPortsPros := config.GetEnv("SERVICES", true)
 	deleteCommands := config.GetEnv("DELETE_COMMADS", false) == "true"
-	adminIDs := config.GetEnv("ADMIN_IDS", false)
+	adminIDs := config.GetEnv("ADMIN_IDS", true)
+	dbPath := config.GetEnv("DB_PATH", true)
 
 	// Initialize modules
-	database.InitDB()
+	database.InitDB(dbPath)
 	firewall.InitFirewall(servicesPortsPros)
 	bot.InitBot()
 	services.InitServices(adminIDs)
