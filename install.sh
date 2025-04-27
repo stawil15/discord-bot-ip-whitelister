@@ -88,6 +88,10 @@ EOL
 chown -R whitelistbot:whitelistbot /var/lib/ip_whitelister_bot
 chmod 600 /etc/ip_whitelister_bot/.env
 chown whitelistbot:whitelistbot /etc/ip_whitelister_bot/.env
+chmod 755 /var/lib/ip_whitelister_bot
+touch /var/lib/ip_whitelister_bot/whitelist.db
+chown whitelistbot:whitelistbot /var/lib/ip_whitelister_bot/whitelist.db
+chmod 660 /var/lib/ip_whitelister_bot/whitelist.db
 
 
 # Give bot sudo permission for UFW
