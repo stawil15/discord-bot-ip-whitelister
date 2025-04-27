@@ -34,7 +34,7 @@ mkdir -p /var/log
 
 
 # Download the latest release from GitHub
-GITHUB_REPO="geekloper/discord-bot-ip-whitelister"  # Remplace par ton repo GitHub
+GITHUB_REPO="geekloper/discord-bot-ip-whitelister"
 LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/$GITHUB_REPO/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
 if [[ -z "$LATEST_RELEASE_URL" ]]; then
@@ -87,6 +87,7 @@ EOL
 # Setting the correct permissions
 chown -R whitelistbot:whitelistbot /var/lib/ip_whitelister_bot
 chmod 600 /etc/ip_whitelister_bot/.env
+chown whitelistbot:whitelistbot /etc/ip_whitelister_bot/.env
 
 
 # Give bot sudo permission for UFW
