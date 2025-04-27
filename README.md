@@ -41,7 +41,7 @@ This script will:
 Edit the `.env` file to add your Discord bot credentials:
 
 ```sh
-sudo vi /etc/whitelist_bot/.env
+sudo vi /etc/ip_whitelister_bot/.env
 ```
 
 Example `.env` file:
@@ -75,6 +75,10 @@ sudo systemctl status ip_whitelister_bot
 View logs:
 
 ```sh
+sudo cat /var/log/ip_whitelister_bot.log 
+```
+
+```sh
 sudo journalctl -u ip_whitelister_bot -f
 ```
 
@@ -103,7 +107,14 @@ Banning removes their ability to whitelist IPs & deny their ips in UFW.
 
 
 ## Uninstallation
-To remove the bot completely:
+
+Using uninstall.sh 
+
+```sh
+curl -sSL https://raw.githubusercontent.com/geekloper/discord-bot-ip-whitelister/main/uninstall.sh  | sudo bash
+```
+
+Or this commands if installed manually:
 
 ```sh
 sudo systemctl stop ip_whitelister_bot

@@ -9,9 +9,12 @@ import (
 
 // LoadEnv loads environment variables from a .env file
 func LoadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if os.Getenv("BOT_TOKEN") == "" {
+		// Only load .env if not already set by the environment (like systemd)
+		err := godotenv.Load("/etc/ip_whitelister_bot/.env")
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 }
 
