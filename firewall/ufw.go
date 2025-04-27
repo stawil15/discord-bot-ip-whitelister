@@ -69,7 +69,7 @@ func removeUFWRule(ip string) error {
 		}
 		port, proto := parts[0], parts[1]
 
-		cmd := fmt.Sprintf("sudo ufw delete proto %s from %s to any port %s", proto, ip, port)
+		cmd := fmt.Sprintf("sudo ufw delete allow proto %s from %s to any port %s", proto, ip, port)
 		output, err := utils.RunCommand(cmd)
 		if err != nil {
 			return fmt.Errorf("❌ failed to delete rule for port %s: %v\n%s", port, err, output)
