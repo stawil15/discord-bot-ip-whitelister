@@ -1,4 +1,6 @@
 
+This is a fork of geekloper's project
+
 # Discord Bot IP Whitelister
 
 A Discord bot that allows users to manage their IP whitelisting and bans directly from Discord. With the `/whitelist` command, players can securely add their IP addresses to the UFW firewall of a game server, preventing unauthorized access and mitigating DDoS attacks.
@@ -23,7 +25,7 @@ Admins have access to the `/ban` command, which allows them to ban a user by the
 Run this command to **automatically download and install** the bot:
 
 ```sh
-curl -sSL https://raw.githubusercontent.com/geekloper/discord-bot-ip-whitelister/main/install.sh  | sudo bash
+curl -sSL https://raw.githubusercontent.com/stawil/discord-bot-ip-whitelister/main/install.sh  | sudo bash
 ```
 
 This script will:
@@ -111,7 +113,7 @@ Banning removes their ability to whitelist IPs & deny their ips in UFW.
 Using uninstall.sh 
 
 ```sh
-curl -sSL https://raw.githubusercontent.com/geekloper/discord-bot-ip-whitelister/main/uninstall.sh  | sudo bash
+curl -sSL https://raw.githubusercontent.com/stawil15/discord-bot-ip-whitelister/main/uninstall.sh  | sudo bash
 ```
 
 Or this commands if installed manually:
