@@ -25,7 +25,7 @@ Admins have access to the `/ban` command, which allows them to ban a user by the
 Run this command to **automatically download and install** the bot:
 
 ```sh
-curl -sSL https://raw.githubusercontent.com/stawil/discord-bot-ip-whitelister/main/install.sh  | sudo bash
+curl -sSL https://raw.githubusercontent.com/stawil15/discord-bot-ip-whitelister/main/install.sh  | sudo bash
 ```
 
 This script will:
